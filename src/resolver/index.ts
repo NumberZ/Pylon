@@ -2,13 +2,13 @@ import * as debug from 'debug';
 const l = debug('resolve');
 import * as ts from 'typescript';
 
-interface ItsOptions {
+export interface ItsOptions {
   moduleName: string;
   containlingFile: string;
   optionsTsconfig?: ts.CompilerOptions;
 }
 
-interface IjsOptions {
+export interface IjsOptions {
   moduleName: string;
   containlingFile: string;
   alias:

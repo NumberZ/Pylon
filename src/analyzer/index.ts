@@ -26,13 +26,13 @@ export interface Option {
   };
   isJs: boolean;
 }
-type tsResolveMod = ts.ResolvedModuleFull | undefined;
+export type tsResolveMod = ts.ResolvedModuleFull | undefined;
 export interface ItreeItem {
   notResolvedPaths?: string[];
   resolvedModules?: tsResolveMod[];
   denpendencesFileName: string[];
 }
-interface IfileOption {
+export interface IfileOption {
   filePath: string;
   tsconfigPath?: string;
   isJs: boolean;

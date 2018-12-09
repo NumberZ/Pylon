@@ -5,10 +5,10 @@ import chalk from 'chalk';
 export function isTsRelateve(filename: string) {
   return filename.match(/\.(j|t)sx?$/gi);
 }
-interface Inode {
+export interface Inode {
   name: string;
 }
-interface Ilink {
+export interface Ilink {
   source: number;
   target: number;
 }

@@ -12,6 +12,7 @@
     "noUnusedParameters": true,
     "noImplicitThis": true,
     "noImplicitReturns": true,
+    "declaration": true,
     "outDir": "dist"
   },
   "include": ["./src"],

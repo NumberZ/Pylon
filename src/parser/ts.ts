@@ -3,7 +3,7 @@ import * as _ from 'lodash';
 import Project, { ScriptTarget, SyntaxKind, ts } from 'ts-simple-ast';
 import * as debug from 'debug';
 const l = debug('parse');
-interface Ioption {
+export interface Ioption {
   tsConfigFilePath: string;
   filePath: string;
 }
