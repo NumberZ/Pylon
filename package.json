@@ -2,7 +2,7 @@
   "name": "pylonn-llh",
   "version": "0.0.1",
   "description": "",
-  "main": "./src/index.js",
+  "main": "./dist/index.js",
   "dependencies": {
     "@types/d3": "^5.0.0",
     "@types/ejs": "^2.5.1",
@@ -33,7 +33,7 @@
     "walkdir": "0.0.12"
   },
   "bin": {
-    "dependence": "./src/cli/index.js"
+    "dependence": "./dist/cli/index.js"
   },
   "devDependencies": {
     "@types/chalk": "^2.2.0",
