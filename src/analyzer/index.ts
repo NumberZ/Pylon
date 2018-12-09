@@ -1,5 +1,5 @@
 import { parse } from '../parser/ts';
-import { tsReolveOptions } from '../resolver';
+import { tsReolveOptions, jsResolveOptions } from '../resolver';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as ts from 'typescript';
@@ -7,9 +7,10 @@ import * as _ from 'lodash';
 import chalk from 'chalk';
 import * as debug from 'debug';
 const l = debug('analyzer');
-const DEFAULTIGNOREFILE = [/.*\.js$/, /.*\.d\.ts/];
-const MATHCHEDFILE = [/.*\.tsx/, /.*\.ts/];
-const IGNOREDICTIONARYPATH = [/node_modules/];
+
+const DEFAULTIGNOREFILE = [/.*\.d\.ts/];
+const MATHCHEDFILE = [/.*\.tsx$/, /.*\.jsx$/, /.*\.ts$/, /.*\.js$/];
+const IGNOREDICTIONARYPATH = [/node_modules/, /\.git/, /\.vscode/, /\.build/];
 const tree: Tree = {};
 export interface Option {
   // 文件路径
@@ -20,6 +21,9 @@ export interface Option {
   ignore?: RegExp[];
   match?: RegExp[];
   tsconfigPath?: string;
+  alias?: {
+    [path: string]: string;
+  };
   isJs: boolean;
 }
 type tsResolveMod = ts.ResolvedModuleFull | undefined;
@@ -32,6 +36,9 @@ interface IfileOption {
   filePath: string;
   tsconfigPath?: string;
   isJs: boolean;
+  alias?: {
+    [path: string]: string;
+  };
 }
 
 interface TsConfigFactoryOptions {
@@ -207,7 +214,8 @@ function analyzeAPathExistCirleRefenrence(
  *   tsconfigPath: tsconfig.json 可能路径 会自动搜索;
  */
 let tsconfigPath: string;
-async function analyzeFile(options: IfileOption): Promise<Tree> {
+export async function analyzeFile(options: IfileOption): Promise<Tree> {
+  l('-------analyzeFile options', options);
   const filePath = options.filePath;
   if (!path.isAbsolute(filePath)) {
     throw new Error(`${filePath}不是绝对路径`);
@@ -215,52 +223,73 @@ async function analyzeFile(options: IfileOption): Promise<Tree> {
   console.log(chalk.green(`开始分析 ${filePath}`));
   l(`开始分析 ${filePath}`);
 
-  if (options.tsconfigPath && !tsconfigPath) {
-    tsconfigPath = tsConfigFileResolver({
-      rootTsConfigPath: options.tsconfigPath,
-      ignorePaths: [/node_modules/],
-    });
-  } else if (!tsconfigPath) {
-    tsconfigPath = tsConfigFileResolver();
-  }
   // 不限制ts
   const denpendences = parse(filePath, tsconfigPath, options.isJs);
-  let tsconfig: { compilerOptions: ts.CompilerOptions } = {
-    compilerOptions: {},
-  };
-  try {
-    tsconfig = JSON.parse(fs.readFileSync(tsconfigPath).toString());
-  } catch (e) {
-    throw new Error('解析tsconfig---error' + e.message);
-  }
-  const tsdirName = path.dirname(tsconfigPath);
-  if (
-    tsconfig &&
-    tsconfig.compilerOptions &&
-    tsconfig.compilerOptions.baseUrl
-  ) {
-    // 转换baseUrl
-    const baseUrl = path.resolve(tsdirName, tsconfig.compilerOptions.baseUrl);
-    tsconfig.compilerOptions.baseUrl = baseUrl;
-  }
-  const resolvedModules = denpendences.map((notResolvedDenpath: string) => {
-    return tsReolveOptions({
-      moduleName: notResolvedDenpath,
-      containlingFile: options.filePath,
-      optionsTsconfig: tsconfig.compilerOptions,
+  l('-----denpendences', denpendences);
+  if (options.isJs) {
+    const resolvedModules = denpendences.map((notResolvedDenpath: string) => {
+      return jsResolveOptions({
+        moduleName: notResolvedDenpath,
+        containlingFile: options.filePath,
+        alias: options.alias,
+      });
     });
-  });
+    l('-----resolvedModules', resolvedModules);
+    tree[filePath] = {
+      notResolvedPaths: denpendences,
+      resolvedModules,
+      denpendencesFileName: resolvedModules.map((item: tsResolveMod, index) => {
+        return item && item.resolvedFileName
+          ? path.resolve(item.resolvedFileName)
+          : denpendences[index];
+      }),
+    };
+  } else {
+    let tsconfig: { compilerOptions: ts.CompilerOptions } = {
+      compilerOptions: {},
+    };
+    if (options.tsconfigPath && !tsconfigPath) {
+      tsconfigPath = tsConfigFileResolver({
+        rootTsConfigPath: options.tsconfigPath,
+        ignorePaths: [/node_modules/],
+      });
+    } else if (!tsconfigPath) {
+      tsconfigPath = tsConfigFileResolver();
+    }
+    try {
+      tsconfig = JSON.parse(fs.readFileSync(tsconfigPath).toString());
+    } catch (e) {
+      throw new Error('解析tsconfig---error' + e.message);
+    }
+    const tsdirName = path.dirname(tsconfigPath);
+    if (
+      tsconfig &&
+      tsconfig.compilerOptions &&
+      tsconfig.compilerOptions.baseUrl
+    ) {
+      // 转换baseUrl
+      const baseUrl = path.resolve(tsdirName, tsconfig.compilerOptions.baseUrl);
+      tsconfig.compilerOptions.baseUrl = baseUrl;
+    }
+    const resolvedModules = denpendences.map((notResolvedDenpath: string) => {
+      return tsReolveOptions({
+        moduleName: notResolvedDenpath,
+        containlingFile: options.filePath,
+        optionsTsconfig: tsconfig.compilerOptions,
+      });
+    });
+    tree[filePath] = {
+      notResolvedPaths: denpendences,
+      resolvedModules,
+      denpendencesFileName: resolvedModules.map((item: tsResolveMod, index) => {
+        return item && item.resolvedFileName
+          ? path.resolve(item.resolvedFileName)
+          : denpendences[index];
+      }),
+    };
+  }
   console.log(chalk.green(`分析完成 ${filePath}`));
-  l(`分析完成 ${filePath}`);
-  tree[filePath] = {
-    notResolvedPaths: denpendences,
-    resolvedModules,
-    denpendencesFileName: resolvedModules.map((item: tsResolveMod, index) => {
-      return item && item.resolvedFileName
-        ? path.resolve(item.resolvedFileName)
-        : denpendences[index];
-    }),
-  };
+
   return tree;
 }
 
@@ -279,10 +308,13 @@ export async function analyze(options: Option): Promise<Tree> {
       filePath: options.filePath,
       tsconfigPath: options.tsconfigPath,
       isJs: options.isJs,
+      alias: options.alias,
     });
   }
   if (!options.ignore) {
-    options.ignore = DEFAULTIGNOREFILE;
+    options.ignore = options.isJs
+      ? DEFAULTIGNOREFILE
+      : [/.*\.js$/, ...DEFAULTIGNOREFILE];
   }
   if (!options.match) {
     options.match = MATHCHEDFILE;
@@ -300,7 +332,7 @@ export async function analyze(options: Option): Promise<Tree> {
       throw new Error(`readdirSync ${options.dictionaryPath} is null`);
     }
     // tslint:disable-next-line:no-commented-code
-    // l('------------analyze dirInfos', dirInfos);
+    l('------------analyze dirInfos', dirInfos);
     // tslint:disable-next-line:prefer-for-of
     for (let i = 0; i < dirInfos.length; i++) {
       const fileName = dirInfos[i];
@@ -317,6 +349,7 @@ export async function analyze(options: Option): Promise<Tree> {
           filePath,
           tsconfigPath: options.tsconfigPath,
           isJs: options.isJs,
+          alias: options.alias,
         });
       } else if (stat.isDirectory()) {
         // tslint:disable-next-line:curly
@@ -332,6 +365,7 @@ export async function analyze(options: Option): Promise<Tree> {
             dictionaryPath: filePath,
             tsconfigPath: options.tsconfigPath,
             isJs: options.isJs,
+            alias: options.alias,
           });
         } else {
           console.log(`遇到${options.ignoreDictionaryPath} 忽略`);
