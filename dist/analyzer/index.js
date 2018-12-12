@@ -133,6 +133,7 @@ tree, saved = {}, ans = [], level, ansOfTwoArray = [[]]) {
     // 每个返回都要减减
     return false;
 }
+exports.analyzeAPathExistCirleRefenrence = analyzeAPathExistCirleRefenrence;
 /**
  *
  *

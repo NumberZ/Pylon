@@ -9,7 +9,7 @@ import * as fs from 'fs';
 
 import * as _ from 'lodash';
 import { getTreeDataWithDictionary } from '../util';
-import { genBeDependentTree } from './genDepenceTree';
+import { genDepenceTree } from './genDepenceTree';
 export interface Node {
   name: string;
   children: Node[];
@@ -138,7 +138,7 @@ export async function startAnalyze(option: IuserOpton) {
   if (option.rootFile) {
     fs.writeFileSync(
       path.join(process.cwd(), 'dependences.json'),
-      JSON.stringify(genBeDependentTree(option.rootFile, tree))
+      JSON.stringify(genDepenceTree(option.rootFile, tree))
     );
   }
 

@@ -1,15 +1,25 @@
 import { Tree } from '../analyzer';
+export interface Cricle {
+    source: string;
+    target: string;
+}
 /**
  *
  * @param fileName 文件的绝对路径
  * @param gTree analyze 生成的gTree
  */
 declare const genDepenceTree: (fileName: string, gTree: Tree) => {
-    name: string;
-    children: any[];
+    dependentTree: {
+        name: string;
+        children: any[];
+    };
+    circle: Cricle[];
 };
 declare const genBeDependentTree: (fileName: string, gTree: Tree) => {
-    name: string;
-    children: any[];
-} | undefined;
+    beDependentTree: {
+        name: string;
+        children: any[];
+    };
+    circle: Cricle[];
+};
 export { genDepenceTree, genBeDependentTree };

@@ -133,7 +133,7 @@ function isValidatePath(str: string): boolean {
   return !!str;
 }
 
-interface ICirleSaved {
+export interface ICirleSaved {
   [key: string]: { count: number };
 }
 
@@ -144,7 +144,7 @@ interface ICirleSaved {
  * @param saved 用于记录引用次数
  * @param ans 保存循环引用的数组
  */
-function analyzeAPathExistCirleRefenrence(
+export function analyzeAPathExistCirleRefenrence(
   // tslint:disable-next-line:no-shadowed-variable
   path: string,
   // tslint:disable-next-line:no-shadowed-variable

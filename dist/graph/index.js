@@ -92,7 +92,7 @@ async function startAnalyze(option) {
         }
     }
     if (option.rootFile) {
-        fs.writeFileSync(path.join(process.cwd(), 'dependences.json'), JSON.stringify(genDepenceTree_1.genBeDependentTree(option.rootFile, tree)));
+        fs.writeFileSync(path.join(process.cwd(), 'dependences.json'), JSON.stringify(genDepenceTree_1.genDepenceTree(option.rootFile, tree)));
     }
     try {
         console.log(chalk_1.default.bold('---------开始生成项目结构'));

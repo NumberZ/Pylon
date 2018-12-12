@@ -17,50 +17,92 @@ const genDepenceTree = (fileName, gTree) => {
     const genDependences = (name) => {
         return gTree[name] ? gTree[name].denpendencesFileName : undefined;
     };
+    const stack = [];
+    const circle = [];
     const genChildren = (name) => {
+        stack.push(name);
         const dependences = genDependences(name);
         const result = [];
         if (!dependences || dependences.length === 0)
             return [];
         for (let i = 0; i < dependences.length; i++) {
-            const name = dependences[i];
-            result.push({
-                name,
-                children: genChildren(name),
-            });
+            const child = dependences[i];
+            if (stack.indexOf(child) !== -1) {
+                circle.push({
+                    source: name,
+                    target: child,
+                });
+            }
+            else {
+                result.push({
+                    name: child,
+                    children: genChildren(child),
+                });
+            }
+            stack.pop();
         }
         return result;
     };
-    return {
+    const dependentTree = {
         name: fileName,
         children: genChildren(fileName),
     };
+    return {
+        dependentTree,
+        circle,
+    };
 };
 exports.genDepenceTree = genDepenceTree;
+// function checkCircle(path: string, tree: Tree) {
+//   const ansTwoArray = [[]];
+//   analyzeAPathExistCirleRefenrence(path, tree, {}, [], 0, ansTwoArray);
+//   return ansTwoArray;
+// }
 const genBeDependentTree = (fileName, gTree) => {
     const keys = Object.keys(gTree);
+    const stack = [];
+    const circle = [];
     if (keys.indexOf(fileName) === -1)
-        return;
+        return {
+            beDependentTree: {
+                name: fileName,
+                children: [],
+            },
+            circle,
+        };
     const genChildren = (name) => {
         if (!gTree[name])
             return [];
+        stack.push(name);
         const result = [];
         for (let i = 0; i < keys.length; i++) {
             const key = keys[i];
             const leaf = gTree[key];
             if (leaf.denpendencesFileName.indexOf(name) !== -1) {
-                console.log(key);
-                result.push({
-                    name: key,
-                    children: genChildren(key),
-                });
+                if (stack.indexOf(key) !== -1) {
+                    circle.push({
+                        source: name,
+                        target: key,
+                    });
+                }
+                else {
+                    result.push({
+                        name: key,
+                        children: genChildren(key),
+                    });
+                    stack.pop();
+                }
             }
         }
         return result;
     };
-    return {
+    const beDependentTree = {
         name: fileName,
         children: genChildren(fileName),
+    };
+    return {
+        beDependentTree,
+        circle,
     };
 };
 exports.genBeDependentTree = genBeDependentTree;
